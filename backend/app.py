@@ -137,10 +137,10 @@ def analyze_pdf():
                     **inputs,
                     max_new_tokens=1000,  # Limite du nombre de nouveaux tokens générés
                     do_sample= True,  # Active l'échantillonnage stochastique (Hasard)
-                    temperature=0.5,  # Réglage de la créativité
-                    top_p= 1,  # Nucleus sampling pour limiter les options improbables
-                    top_k= 40,  # Limitation au top-k tokens les plus probables
-                    repetition_penalty=1.3  # Pour éviter les répétitions excessives
+                    #temperature=0.5,  # Réglage de la créativité
+                    #top_p= 1,  # Nucleus sampling pour limiter les options improbables
+                    #top_k= 40,  # Limitation au top-k tokens les plus probables
+                    #repetition_penalty=1.3  # Pour éviter les répétitions excessives
 
                 )
 
