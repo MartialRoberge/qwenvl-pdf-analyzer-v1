@@ -225,7 +225,7 @@ def analyze_pdf():
                 # Analyze the image
                 result = model_optimizer.analyze_image(image, i + 1, len(images))
                 analyses.append({
-                    'page_number': i + 1,
+                    'page': i + 1,  
                     'content': result
                 })
                 logger.info(f"Page {i + 1} processed successfully")
@@ -233,7 +233,7 @@ def analyze_pdf():
             except Exception as e:
                 logger.error(f"Error processing page {i + 1}: {str(e)}")
                 analyses.append({
-                    'page_number': i + 1,
+                    'page': i + 1,  
                     'content': f"Error processing page: {str(e)}"
                 })
 
