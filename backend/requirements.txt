@@ -1,6 +1,10 @@
-flask
-flask-cors
-pdf2image
-pillow
-torch
-transformers
+flask==3.0.0
+flask-cors==4.0.0
+pdf2image==1.16.3
+pillow==10.1.0
+torch==2.2.1
+transformers==4.36.2
+poppler-utils==0.1.0
+matplotlib==3.8.2
+optuna==3.5.0
+nltk==3.8.1
