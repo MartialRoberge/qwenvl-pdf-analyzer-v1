@@ -8,21 +8,33 @@ export default {
     extend: {
       colors: {
         finance: {
-          50: '#f5f8fa',
-          100: '#e8f1f5',
-          200: '#d1e3eb',
-          300: '#a3c7d6',
-          400: '#6b9fb8',
-          500: '#457b96',
-          600: '#2d5f78',
-          700: '#1f4558',
-          800: '#162f3c',
-          900: '#0e1c24',
-        },
+          50: '#f0f9ff',
+          100: '#e0f2fe',
+          200: '#bae6fd',
+          300: '#7dd3fc',
+          400: '#38bdf8',
+          500: '#0ea5e9',
+          600: '#0284c7',
+          700: '#0369a1',
+          800: '#075985',
+          900: '#0c4a6e',
+        }
       },
       animation: {
-        'bounce-slow': 'bounce 3s infinite',
-      }
+        'gradient': 'gradient 8s linear infinite',
+      },
+      keyframes: {
+        gradient: {
+          '0%, 100%': {
+            'background-size': '200% 200%',
+            'background-position': 'left center'
+          },
+          '50%': {
+            'background-size': '200% 200%',
+            'background-position': 'right center'
+          },
+        },
+      },
     },
   },
   plugins: [],

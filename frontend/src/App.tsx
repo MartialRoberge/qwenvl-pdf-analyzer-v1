@@ -59,49 +59,54 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-finance-50 to-finance-100">
-      <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-finance-50 via-white to-finance-100">
+      <div className="max-w-7xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center"
+          className="text-center space-y-4"
         >
-          <h1 className="text-4xl font-bold text-finance-800 mb-2">
-            Financial Document Analyzer
+          <h1 className="text-5xl font-extrabold text-finance-800 mb-4 bg-clip-text text-transparent bg-gradient-to-r from-finance-600 to-finance-800">
+            PDF Analyzer
           </h1>
-          <p className="text-lg text-finance-600">
-            Upload your financial document for expert analysis
+          <p className="text-xl text-finance-600 max-w-2xl mx-auto">
+            Upload your PDF document and let our AI analyze it for you
           </p>
         </motion.div>
 
         <motion.div
           className={clsx(
-            'mt-12 max-w-3xl mx-auto rounded-xl shadow-lg transition-colors duration-200',
-            isDragActive ? 'bg-finance-100 border-finance-400' : 'bg-white border-finance-200',
-            'border-2 border-dashed p-8'
+            'mt-12 max-w-3xl mx-auto rounded-2xl shadow-xl transition-all duration-300',
+            isDragActive ? 'bg-finance-50 border-finance-400 scale-105' : 'bg-white border-finance-200 hover:shadow-2xl hover:border-finance-300',
+            'border-2 border-dashed p-12'
           )}
           {...getRootProps()}
-          whileHover={{ scale: 1.01 }}
-          whileTap={{ scale: 0.99 }}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
         >
           <input {...getInputProps()} />
-          <div className="text-center">
+          <div className="text-center space-y-4">
             <DocumentArrowUpIcon 
               className={clsx(
-                'mx-auto h-12 w-12 mb-4',
+                'mx-auto h-16 w-16 mb-4 transition-colors duration-300',
                 isDragActive ? 'text-finance-500' : 'text-finance-400'
               )} 
             />
             {file ? (
-              <p className="text-finance-600">
-                Selected: <span className="font-semibold">{file.name}</span>
-              </p>
+              <div className="space-y-2">
+                <p className="text-lg text-finance-700 font-medium">
+                  Selected file:
+                </p>
+                <p className="text-finance-600 bg-finance-50 py-2 px-4 rounded-lg inline-block">
+                  {file.name}
+                </p>
+              </div>
             ) : (
-              <p className="text-finance-500">
+              <p className="text-lg text-finance-600">
                 {isDragActive ? (
-                  "Drop your PDF here..."
+                  "Drop your PDF here to analyze..."
                 ) : (
-                  "Drag & drop your financial document, or click to select"
+                  "Drag & drop your PDF, or click to select"
                 )}
               </p>
             )}
@@ -110,9 +115,9 @@ function App() {
 
         {error && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="mt-4 text-center text-red-600 bg-red-50 py-2 px-4 rounded-md"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-6 text-center text-red-600 bg-red-50 py-3 px-6 rounded-xl max-w-2xl mx-auto border border-red-100"
           >
             {error}
           </motion.div>
@@ -123,16 +128,17 @@ function App() {
             onClick={analyzePDF}
             disabled={!file || isLoading}
             className={clsx(
-              'inline-flex items-center px-6 py-3 rounded-lg shadow-md',
-              'text-white bg-finance-600 hover:bg-finance-700',
+              'inline-flex items-center px-8 py-4 rounded-xl shadow-lg',
+              'text-white bg-gradient-to-r from-finance-600 to-finance-700',
+              'hover:from-finance-700 hover:to-finance-800',
               'focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-finance-500',
-              'transition-colors duration-200',
+              'transition-all duration-300 text-lg font-medium',
               (!file || isLoading) && 'opacity-50 cursor-not-allowed'
             )}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            <DocumentMagnifyingGlassIcon className="mr-2 h-5 w-5" />
+            <DocumentMagnifyingGlassIcon className="mr-3 h-6 w-6" />
             {isLoading ? 'Analyzing...' : 'Analyze Document'}
           </motion.button>
         </motion.div>
@@ -143,9 +149,9 @@ function App() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="mt-12 max-w-4xl mx-auto"
+              className="mt-16 max-w-4xl mx-auto space-y-8"
             >
-              <h2 className="text-2xl font-bold text-finance-800 mb-6">
+              <h2 className="text-3xl font-bold text-finance-800 text-center mb-8">
                 Analysis Results
               </h2>
               {analyses.map((analysis, index) => (
@@ -154,15 +160,15 @@ function App() {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  className="mb-6 bg-white rounded-lg shadow-md overflow-hidden"
+                  className="bg-white rounded-xl shadow-lg overflow-hidden transform transition-all duration-300 hover:shadow-xl"
                 >
-                  <div className="bg-finance-50 px-6 py-3 border-b border-finance-100">
-                    <h3 className="text-lg font-medium text-finance-700">
+                  <div className="bg-gradient-to-r from-finance-50 to-white px-8 py-4 border-b border-finance-100">
+                    <h3 className="text-xl font-semibold text-finance-700">
                       Page {analysis.page_number}
                     </h3>
                   </div>
-                  <div className="px-6 py-4">
-                    <p className="text-finance-600 whitespace-pre-wrap">
+                  <div className="px-8 py-6">
+                    <p className="text-finance-600 whitespace-pre-wrap text-lg leading-relaxed">
                       {analysis.content}
                     </p>
                   </div>
@@ -173,10 +179,10 @@ function App() {
         </AnimatePresence>
 
         {isLoading && (
-          <div className="mt-12 max-w-4xl mx-auto">
-            <div className="animate-pulse space-y-4">
+          <div className="mt-16 max-w-4xl mx-auto space-y-6">
+            <div className="animate-pulse space-y-6">
               {[1, 2, 3].map((n) => (
-                <div key={n} className="bg-finance-100 h-32 rounded-lg" />
+                <div key={n} className="bg-finance-100 h-40 rounded-xl" />
               ))}
             </div>
           </div>

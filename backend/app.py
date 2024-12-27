@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from pdf2image import convert_from_bytes
-from transformers import AutoProcessor, Qwen2VLForConditionalGeneration
+from transformers import AutoProcessor, Qwen2VLForConditionalGeneration, AutoTokenizer
 import torch
 import logging
 import optuna
@@ -27,8 +27,39 @@ CORS(app)
 MIN_PIXELS = 256 * 28 * 28
 MAX_PIXELS = 1280 * 28 * 28
 MODEL_NAME = "Qwen/Qwen2-VL-2B-Instruct"
-TARGET_IMAGE_SIZE = (1024, 1024)
+TARGET_IMAGE_SIZE = (480, 480)
 HYPERPARAMS_FILE = "optimal_hyperparams.json"
+
+def setup_device():
+    """Configure the processing device"""
+    if torch.backends.mps.is_available():
+        device = torch.device("mps")
+        logger.info("Using MPS device")
+    else:
+        device = torch.device("cpu")
+        logger.info("Using CPU device")
+    return device
+
+def load_model(device):
+    """Load and configure the model and processor"""
+    try:
+        processor = AutoProcessor.from_pretrained(
+            MODEL_NAME,
+            min_pixels=MIN_PIXELS,
+            max_pixels=MAX_PIXELS
+        )
+
+        model = Qwen2VLForConditionalGeneration.from_pretrained(
+            MODEL_NAME,
+            torch_dtype=torch.float16,
+            trust_remote_code=True,
+            max_memory={'mps': '8GB'}  # Limite la mémoire MPS
+        ).to(device)
+
+        return processor, model
+    except Exception as e:
+        logger.error(f"Error loading model: {str(e)}")
+        raise
 
 class ModelOptimizer:
     def __init__(self, model, processor, device):
@@ -36,6 +67,7 @@ class ModelOptimizer:
         self.processor = processor
         self.device = device
         self.best_params = self.load_optimal_params()
+        self.tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 
     def load_optimal_params(self):
         """Load optimal parameters if they exist"""
@@ -47,258 +79,135 @@ class ModelOptimizer:
             logger.warning(f"Could not load optimal parameters: {e}")
         
         return {
-            'max_new_tokens': 500,
+            'max_new_tokens': 1000,
+            'do_sample': True,
             'temperature': 0.7,
             'top_p': 0.9,
-            'top_k': 50,
-            'repetition_penalty': 1.2,
-            'num_beams': 4,
-            'length_penalty': 1.0
+            'top_k': 40,
+            'repetition_penalty': 1.3
         }
 
-    def optimize(self, reference_data):
-        """
-        Optimize model parameters using reference data
-        reference_data: list of tuples (image, expected_text)
-        """
-        def objective(trial):
-            # Define hyperparameters to optimize
-            params = {
-                'max_new_tokens': trial.suggest_int('max_new_tokens', 200, 1000),
-                'temperature': trial.suggest_float('temperature', 0.1, 1.0),
-                'top_p': trial.suggest_float('top_p', 0.1, 1.0),
-                'top_k': trial.suggest_int('top_k', 10, 100),
-                'repetition_penalty': trial.suggest_float('repetition_penalty', 1.0, 2.0),
-                'num_beams': trial.suggest_int('num_beams', 1, 8),
-                'length_penalty': trial.suggest_float('length_penalty', 0.1, 2.0)
-            }
-            
-            scores = []
-            for image, expected_text in reference_data:
-                try:
-                    # Generate text with current parameters
-                    inputs = self.processor(
-                        images=image,
-                        text=generate_analysis_prompt(1, 1),
-                        return_tensors="pt"
-                    ).to(self.device)
-                    
-                    with torch.no_grad():
-                        outputs = self.model.generate(
-                            **inputs,
-                            **params,
-                            do_sample=True
-                        )
-                    
-                    generated_text = self.processor.batch_decode(outputs, skip_special_tokens=True)[0]
-                    
-                    # Calculate BLEU score
-                    reference = [expected_text.split()]
-                    candidate = generated_text.split()
-                    bleu_score = sentence_bleu(reference, candidate)
-                    
-                    # Add other metrics as needed
-                    content_score = self.evaluate_content_quality(generated_text, expected_text)
-                    
-                    # Combine scores
-                    final_score = (bleu_score * 0.6) + (content_score * 0.4)
-                    scores.append(final_score)
-                
-                except Exception as e:
-                    logger.error(f"Error in optimization trial: {e}")
-                    scores.append(0.0)
-            
-            return sum(scores) / len(scores)
+    def process_vision_info(self, messages):
+        """Extract images from messages"""
+        image_list = []
+        for message in messages:
+            for content in message["content"]:
+                if content["type"] == "image":
+                    image_list.append(content["image"])
+        return image_list, len(image_list)
 
-        # Create and run optimization study
-        study = optuna.create_study(direction="maximize")
-        study.optimize(objective, n_trials=20)
-        
-        # Save optimal parameters
-        self.best_params = study.best_params
-        with open(HYPERPARAMS_FILE, 'w') as f:
-            json.dump(study.best_params, f)
-        
-        return study.best_params
+    def prepare_inputs(self, image, query):
+        """Prepare inputs for the model"""
+        messages = [{
+            "role": "user",
+            "content": [
+                {"type": "image", "image": image},
+                {"type": "text", "text": query}
+            ]
+        }]
 
-    def evaluate_content_quality(self, generated_text, expected_text):
-        """
-        Evaluate the quality of generated content
-        Add your custom metrics here
-        """
-        # Example metrics:
-        # 1. Length ratio
-        length_ratio = min(len(generated_text) / len(expected_text), 1.0)
-        
-        # 2. Key information presence
-        key_info_score = self.check_key_information(generated_text, expected_text)
-        
-        # 3. Structure similarity
-        structure_score = self.evaluate_structure(generated_text, expected_text)
-        
-        # Combine scores
-        return (length_ratio + key_info_score + structure_score) / 3
-
-    def check_key_information(self, generated_text, expected_text):
-        """Check if key information is present in generated text"""
-        key_elements = [
-            # Product identification
-            r'ISIN:\s*XS1914695009',
-            r'BNP Paribas',
-            r'87\.50%\s*Protection',
-            
-            # Dates and amounts
-            r'03 May 2024',
-            r'EUR 1,000',
-            r'EUR 10,000',
-            
-            # Percentages and numbers
-            r'\d+\.\d+%',
-            r'3 out of 7',
-            
-            # Financial terms
-            r'Initial Reference Price',
-            r'Final Reference Price',
-            r'Notional Amount',
-            
-            # Risk and performance
-            r'stress scenario',
-            r'favorable scenario',
-            r'unfavorable scenario',
-            
-            # Costs
-            r'Entry costs',
-            r'Exit costs',
-            r'ongoing costs'
-        ]
-        
-        score = 0
-        for element in key_elements:
-            if re.search(element, generated_text, re.IGNORECASE):
-                score += 1
-        
-        return score / len(key_elements)
-
-    def evaluate_structure(self, generated_text, expected_text):
-        """Evaluate the structural similarity of the texts"""
-        sections = [
-            r'PRODUCT\s+DATA',
-            r'RISK\s+INDICATOR',
-            r'PERFORMANCE\s+SCENARIOS',
-            r'COSTS?\s+OVER\s+TIME',
-            r'COMPOSITION\s+OF\s+COSTS'
-        ]
-        
-        # Check section presence and order
-        score = 0
-        last_pos = -1
-        for section in sections:
-            match = re.search(section, generated_text, re.IGNORECASE)
-            if match:
-                score += 1
-                current_pos = match.start()
-                if current_pos > last_pos:
-                    score += 0.5  # Bonus for correct order
-                last_pos = current_pos
-        
-        return score / (len(sections) * 1.5)  # Normalize score
-
-def setup_device():
-    """Configure the processing device (MPS or CPU)"""
-    if torch.backends.mps.is_available():
-        device = torch.device("mps")
-        logger.info("Using MPS for computation")
-    else:
-        device = torch.device("cpu")
-        logger.info("Using CPU for computation")
-    return device
-
-def load_model(device):
-    """Load and configure the model and processor"""
-    try:
-        # Initialize processor
-        processor = AutoProcessor.from_pretrained(
-            MODEL_NAME,
-            min_pixels=MIN_PIXELS,
-            max_pixels=MAX_PIXELS
+        # Apply chat template
+        text = self.processor.apply_chat_template(
+            messages,
+            tokenize=False,
+            add_generation_prompt=True
         )
+
+        # Get images
+        image_inputs, _ = self.process_vision_info(messages)
+
+        # Prepare inputs with memory optimization
+        inputs = self.processor(
+            text=[text],
+            images=image_inputs,
+            padding=True,
+            truncation=True,  # Tronque si nécessaire
+            return_tensors="pt"
+        )
+
+        # Convertir uniquement les tenseurs d'image en float16, garder les indices en long
+        device_inputs = {}
+        for k, v in inputs.items():
+            if isinstance(v, torch.Tensor):
+                if 'pixel' in k:  # Pour les tenseurs d'image
+                    device_inputs[k] = v.to(dtype=torch.float16, device=self.device)
+                else:  # Pour les indices et masques
+                    device_inputs[k] = v.to(device=self.device, dtype=torch.long)
+            else:
+                device_inputs[k] = v
         
-        # Initialize model
-        model = Qwen2VLForConditionalGeneration.from_pretrained(
-            MODEL_NAME,
-            torch_dtype=torch.float16
-        ).to(device)
+        return device_inputs
+
+    def clean_model_output(self, text: str) -> str:
+        """Nettoie la sortie du modèle pour ne garder que la réponse pertinente"""
+        # Enlève le préfixe du système et de l'utilisateur
+        if 'assistant' in text:
+            text = text.split('assistant')[-1].strip()
         
-        return processor, model
-    except Exception as e:
-        logger.error(f"Error loading model: {str(e)}")
-        raise
+        # Enlève les mentions de page qui sont déjà incluses dans l'interface
+        text = re.sub(r'^Page \d+ of \d+\s*', '', text, flags=re.MULTILINE)
+        
+        # Enlève les espaces et sauts de ligne en trop
+        text = re.sub(r'\n\s*\n', '\n\n', text.strip())
+        
+        return text
 
-def process_image(image):
-    """Process a single image"""
-    try:
-        # Resize image maintaining aspect ratio
-        image.thumbnail(TARGET_IMAGE_SIZE, Image.Resampling.LANCZOS)
-        return image
-    except Exception as e:
-        logger.error(f"Error processing image: {str(e)}")
-        raise
+    def generate_analysis_prompt(self, page_num, total_pages):
+        """Generate the analysis prompt"""
+        return f"""Analyze this financial document page {page_num} of {total_pages} and provide a detailed analysis. Focus on:
+	1.	Product name
+	2.	Product type
+	3.	ISIN identifier
+	4.	Issuer and guarantor
+	5.	Important dates (issue date, maturity date)
+	6.	Protection barrier and underlying indices
+	7.	Expected performance (scenarios: stress, unfavorable, moderate, favorable)
+	8.	Risk indicator (scale 1-7)
+	9.	Total and entry costs
+	10.	Target audience (investment horizon, risk tolerance)
+	11.	Product currency
 
-def generate_analysis_prompt(page_num, total_pages):
-    """Generate the analysis prompt for the model"""
-    return f"""
-    You are analyzing a financial document (page {page_num} of {total_pages}).
-    Please follow these instructions strictly:
-    1. Identify and extract only the information explicitly present on this page.
-    2. For costs, risk indicators, and performance data, provide exact details.
-    3. Enumerate all tables found and summarize their contents.
-    4. Validate all ISIN numbers and identifiers against their standard format.
-    5. If information is not present, indicate "Not Found" rather than making assumptions.
-    """
+If an element is not found on a page, indicate ‘not present’. Summarize your findings in a clear table for each page"""
 
-# Initialize device, model and optimizer
-device = setup_device()
-processor, model = load_model(device)
-model_optimizer = ModelOptimizer(model, processor, device)
+    def analyze_image(self, image, page_num, total_pages):
+        """Analyze a single image"""
+        try:
+            # Resize image
+            if isinstance(image, Image.Image):
+                image = image.resize(TARGET_IMAGE_SIZE)
 
-@app.route('/optimize', methods=['POST'])
-def optimize_model():
-    """Endpoint to optimize model parameters using reference data"""
-    try:
-        if 'pdf' not in request.files or 'reference' not in request.files:
-            return jsonify({'error': 'Both PDF and reference files are required'}), 400
+            # Generate query
+            query = self.generate_analysis_prompt(page_num, total_pages)
 
-        # Process input PDF
-        pdf_file = request.files['pdf']
-        pdf_bytes = pdf_file.read()
-        images = convert_from_bytes(pdf_bytes)
-        processed_images = [process_image(image) for image in images]
+            # Prepare inputs
+            inputs = self.prepare_inputs(image, query)
 
-        # Load reference texts
-        reference_file = request.files['reference']
-        reference_texts = json.loads(reference_file.read().decode('utf-8'))
+            # Generate text with memory optimization
+            with torch.inference_mode():
+                output = self.model.generate(
+                    **inputs,
+                    **self.best_params,
+                    do_sample=True
+                )
+                
+                # Décode et nettoie la sortie
+                raw_text = self.processor.batch_decode(output.cpu(), skip_special_tokens=True)[0]
+                cleaned_text = self.clean_model_output(raw_text)
+                
+                # Libère la mémoire explicitement
+                del output
+                del inputs
+                if hasattr(torch.mps, 'empty_cache'):
+                    torch.mps.empty_cache()
+                
+                return cleaned_text
 
-        # Create reference data pairs
-        reference_data = list(zip(processed_images, reference_texts))
-
-        # Run optimization
-        optimal_params = model_optimizer.optimize(reference_data)
-
-        return jsonify({
-            'status': 'success',
-            'optimal_parameters': optimal_params
-        })
-
-    except Exception as e:
-        logger.error(f"Error during optimization: {str(e)}")
-        return jsonify({
-            'error': str(e),
-            'status': 'error'
-        }), 500
+        except Exception as e:
+            logger.error(f"Error analyzing image: {str(e)}")
+            raise
 
 @app.route('/analyze', methods=['POST'])
 def analyze_pdf():
-    """Endpoint to analyze PDF documents using optimized parameters"""
     try:
         if 'pdf' not in request.files:
             return jsonify({'error': 'No PDF file provided'}), 400
@@ -306,50 +215,41 @@ def analyze_pdf():
         pdf_file = request.files['pdf']
         pdf_bytes = pdf_file.read()
 
+        # Convert PDF to images
         images = convert_from_bytes(pdf_bytes)
-        results = []
+        analyses = []
 
-        for page_num, image in enumerate(images, 1):
-            logger.info(f"Processing page {page_num}/{len(images)}")
+        for i, image in enumerate(images):
+            logger.info(f"Processing page {i + 1}")
             
-            # Process image
-            processed_image = process_image(image)
+            try:
+                # Analyze the image
+                result = model_optimizer.analyze_image(image, i + 1, len(images))
+                analyses.append({
+                    'page_number': i + 1,
+                    'content': result
+                })
+                logger.info(f"Page {i + 1} processed successfully")
             
-            # Generate prompt
-            query = generate_analysis_prompt(page_num, len(images))
-            
-            # Prepare inputs
-            inputs = processor(
-                images=processed_image,
-                text=query,
-                return_tensors="pt"
-            ).to(device)
+            except Exception as e:
+                logger.error(f"Error processing page {i + 1}: {str(e)}")
+                analyses.append({
+                    'page_number': i + 1,
+                    'content': f"Error processing page: {str(e)}"
+                })
 
-            # Generate output
-            with torch.no_grad():
-                outputs = model.generate(
-                    **inputs,
-                    **model_optimizer.best_params,
-                    do_sample=True
-                )
-            
-            response = processor.batch_decode(outputs, skip_special_tokens=True)[0]
-            results.append({
-                'page': page_num,
-                'analysis': response
-            })
-
-        return jsonify({
-            'status': 'success',
-            'results': results
-        })
+        return jsonify({'analyses': analyses})
 
     except Exception as e:
         logger.error(f"Error processing PDF: {str(e)}")
-        return jsonify({
-            'error': str(e),
-            'status': 'error'
-        }), 500
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f"Error processing PDF: {str(e)}"}), 500
+
+# Initialize device, model and optimizer
+device = setup_device()
+processor, model = load_model(device)
+model_optimizer = ModelOptimizer(model, processor, device)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5004, debug=True)
