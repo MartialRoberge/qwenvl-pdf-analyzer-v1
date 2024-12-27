@@ -27,7 +27,7 @@ CORS(app)
 MIN_PIXELS = 256 * 28 * 28
 MAX_PIXELS = 1280 * 28 * 28
 MODEL_NAME = "Qwen/Qwen2-VL-2B-Instruct"
-TARGET_IMAGE_SIZE = (480, 480)
+TARGET_IMAGE_SIZE = (800, 800)
 HYPERPARAMS_FILE = "optimal_hyperparams.json"
 
 def setup_device():
@@ -186,8 +186,7 @@ If an element is not found on a page, indicate ‘not present’. Summarize your
             with torch.inference_mode():
                 output = self.model.generate(
                     **inputs,
-                    **self.best_params,
-                    do_sample=True
+                    **self.best_params  # do_sample est déjà dans best_params
                 )
                 
                 # Décode et nettoie la sortie

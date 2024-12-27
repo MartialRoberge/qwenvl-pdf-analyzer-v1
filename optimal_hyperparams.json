@@ -1,1 +1,1 @@
-{"max_new_tokens": 605, "temperature": 0.9920002117887168, "top_p": 0.8121953364229881, "top_k": 48, "repetition_penalty": 1.8585424787763944, "num_beams": 3, "length_penalty": 0.3123320252011699}
+{"temperature": 0.7288031670655517, "top_p": 0.5062276525188422, "top_k": 42, "repetition_penalty": 1.0754520011244653, "max_new_tokens": 865, "do_sample": "True"}
