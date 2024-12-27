@@ -1,13 +1,224 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React + TS</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analyseur de Documents Financiers</title>
+    
+    <!-- Tailwind et DaisyUI pour un design moderne -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.24/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome pour les icônes -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Alpine.js pour la réactivité -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <!-- Marked.js pour le Markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                },
+            },
+            daisyui: {
+                themes: ["light"],
+            },
+        }
+    </script>
+    
+    <!-- Police Inter -->
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+</head>
+
+<body class="min-h-screen bg-base-200" x-data="app()">
+    <!-- Navbar -->
+    <div class="navbar bg-base-100 shadow-lg">
+        <div class="navbar-start">
+            <i class="fa-solid fa-file-pdf text-primary text-2xl ml-4"></i>
+        </div>
+        <div class="navbar-center">
+            <h1 class="text-xl font-bold">Analyseur de Documents Financiers</h1>
+        </div>
+        <div class="navbar-end">
+            <a href="https://github.com/MartialRoberge/qwenvl-pdf-analyzer-v1" target="_blank" class="btn btn-ghost btn-circle">
+                <i class="fab fa-github text-xl"></i>
+            </a>
+        </div>
+    </div>
+
+    <main class="container mx-auto px-4 py-8">
+        <!-- Zone de dépôt -->
+        <div class="card bg-base-100 shadow-xl">
+            <div class="card-body">
+                <div x-show="!isAnalyzing" 
+                     @drop.prevent="handleDrop($event)"
+                     @dragover.prevent="isDragging = true"
+                     @dragleave.prevent="isDragging = false"
+                     :class="{'border-primary': isDragging}"
+                     class="border-4 border-dashed rounded-lg p-12 text-center transition-all duration-200 hover:border-primary cursor-pointer"
+                     @click="$refs.fileInput.click()">
+                    
+                    <input type="file" 
+                           x-ref="fileInput" 
+                           @change="handleFileSelect"
+                           accept=".pdf" 
+                           class="hidden">
+
+                    <i class="fas fa-cloud-upload-alt text-6xl text-primary mb-4"></i>
+                    <h3 class="text-xl font-semibold mb-2">Déposez votre fichier PDF ici</h3>
+                    <p class="text-gray-500">ou cliquez pour sélectionner</p>
+                    
+                    <div class="mt-4">
+                        <span class="badge badge-ghost">PDF uniquement</span>
+                        <span class="badge badge-ghost">Max 10MB</span>
+                    </div>
+                </div>
+
+                <!-- Indicateur de chargement -->
+                <div x-show="isAnalyzing" class="text-center py-12">
+                    <span class="loading loading-spinner loading-lg text-primary"></span>
+                    <p class="mt-4 text-lg">Analyse en cours...</p>
+                    <p class="text-sm text-gray-500">Cela peut prendre quelques instants</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Résultats -->
+        <div x-show="analyses.length > 0" class="mt-8 space-y-6">
+            <template x-for="(analysis, index) in analyses" :key="index">
+                <div class="card bg-base-100 shadow-xl">
+                    <div class="card-body">
+                        <div class="flex justify-between items-center">
+                            <h3 class="card-title">
+                                <i class="fas fa-file-alt text-primary mr-2"></i>
+                                Page <span x-text="analysis.page"></span>
+                            </h3>
+                            <div class="flex gap-2">
+                                <button @click="copyContent(analysis.content)" 
+                                        class="btn btn-ghost btn-sm"
+                                        :class="{'btn-success': analysis.copied}">
+                                    <i class="fas" :class="analysis.copied ? 'fa-check' : 'fa-copy'"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="divider"></div>
+                        <div class="prose max-w-none" x-html="formatContent(analysis.content)"></div>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <!-- Message d'erreur -->
+        <div x-show="error" 
+             class="toast toast-top toast-center">
+            <div class="alert alert-error">
+                <i class="fas fa-exclamation-circle"></i>
+                <span x-text="error"></span>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        function app() {
+            return {
+                isDragging: false,
+                isAnalyzing: false,
+                analyses: [],
+                error: null,
+                
+                // Gestion des fichiers
+                handleDrop(e) {
+                    this.isDragging = false;
+                    const file = e.dataTransfer.files[0];
+                    if (file) this.processFile(file);
+                },
+                
+                handleFileSelect(e) {
+                    const file = e.target.files[0];
+                    if (file) this.processFile(file);
+                },
+                
+                processFile(file) {
+                    if (file.type !== 'application/pdf') {
+                        this.showError('Veuillez sélectionner un fichier PDF.');
+                        return;
+                    }
+                    
+                    if (file.size > 10 * 1024 * 1024) {
+                        this.showError('Le fichier est trop volumineux (max 10MB).');
+                        return;
+                    }
+                    
+                    this.analyzeFile(file);
+                },
+                
+                // Analyse du fichier
+                async analyzeFile(file) {
+                    try {
+                        this.isAnalyzing = true;
+                        this.error = null;
+                        this.analyses = [];
+                        
+                        const formData = new FormData();
+                        formData.append('pdf', file);
+                        
+                        const response = await fetch('http://localhost:5004/analyze', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error('Erreur lors de l\'analyse');
+                        }
+                        
+                        const data = await response.json();
+                        this.analyses = data.analyses.map(a => ({
+                            ...a,
+                            copied: false
+                        }));
+                        
+                    } catch (error) {
+                        this.showError(error.message);
+                    } finally {
+                        this.isAnalyzing = false;
+                    }
+                },
+                
+                // Utilitaires
+                showError(message) {
+                    this.error = message;
+                    setTimeout(() => {
+                        this.error = null;
+                    }, 3000);
+                },
+                
+                async copyContent(content) {
+                    try {
+                        await navigator.clipboard.writeText(content);
+                        const analysis = this.analyses.find(a => a.content === content);
+                        if (analysis) {
+                            analysis.copied = true;
+                            setTimeout(() => {
+                                analysis.copied = false;
+                            }, 2000);
+                        }
+                    } catch (error) {
+                        this.showError('Erreur lors de la copie');
+                    }
+                },
+                
+                formatContent(content) {
+                    return marked.parse(content);
+                }
+            }
+        }
+    </script>
+</body>
 </html>
