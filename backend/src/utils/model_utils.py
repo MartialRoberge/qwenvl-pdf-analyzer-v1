@@ -6,6 +6,7 @@ from typing import Dict, Any, Tuple
 from PIL import Image
 import json
 from pathlib import Path
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -45,16 +46,13 @@ def prepare_image(image: Image.Image, target_size: Tuple[int, int]) -> Image.Ima
 
 def clean_model_output(text: str) -> str:
     """Clean model output text."""
-    import re
-    
-    # Remove system and user prefix
     if 'assistant' in text:
         text = text.split('assistant')[-1].strip()
     
-    # Remove page mentions
+    # Remove page mentions already included in interface
     text = re.sub(r'^Page \d+ of \d+\s*', '', text, flags=re.MULTILINE)
     
-    # Clean extra whitespace
+    # Remove extra spaces and newlines
     text = re.sub(r'\n\s*\n', '\n\n', text.strip())
     
     return text
@@ -63,3 +61,5 @@ def optimize_memory():
     """Optimize memory usage."""
     if hasattr(torch.mps, 'empty_cache'):
         torch.mps.empty_cache()
+    elif torch.cuda.is_available():
+        torch.cuda.empty_cache()

@@ -5,13 +5,13 @@ from transformers import AutoProcessor, Qwen2VLForConditionalGeneration, AutoTok
 from PIL import Image
 import logging
 from typing import List, Dict, Any
-from ..utils.model_utils import (
+from src.utils.model_utils import (
     load_optimal_params,
     prepare_image,
     clean_model_output,
     optimize_memory
 )
-from ..config.settings import (
+from src.config.settings import (
     MODEL_NAME,
     MIN_PIXELS,
     MAX_PIXELS,
@@ -36,20 +36,24 @@ class DocumentAnalyzer:
     @classmethod
     def create(cls, device):
         """Create a new analyzer instance."""
-        processor = AutoProcessor.from_pretrained(
-            MODEL_NAME,
-            min_pixels=MIN_PIXELS,
-            max_pixels=MAX_PIXELS
-        )
+        try:
+            processor = AutoProcessor.from_pretrained(
+                MODEL_NAME,
+                min_pixels=MIN_PIXELS,
+                max_pixels=MAX_PIXELS
+            )
 
-        model = Qwen2VLForConditionalGeneration.from_pretrained(
-            MODEL_NAME,
-            torch_dtype=torch.float16,
-            trust_remote_code=True,
-            max_memory=MAX_MEMORY
-        ).to(device)
+            model = Qwen2VLForConditionalGeneration.from_pretrained(
+                MODEL_NAME,
+                torch_dtype=torch.float16,
+                trust_remote_code=True,
+                max_memory=MAX_MEMORY
+            ).to(device)
 
-        return cls(model, processor, device)
+            return cls(model, processor, device)
+        except Exception as e:
+            logger.error(f"Error creating analyzer: {e}")
+            raise
 
     def process_vision_info(self, messages: List[Dict[str, Any]]) -> tuple:
         """Extract images from messages."""
