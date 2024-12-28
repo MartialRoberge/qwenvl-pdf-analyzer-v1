@@ -106,88 +106,105 @@ class DocumentAnalyzer:
         """Generate the analysis prompt."""
         base_prompt = f"""You are a specialized financial document analyzer for Key Information Documents (KID). Your task is to analyze page {page_num} of {total_pages} of this KID document.
 
-CRITICAL INSTRUCTIONS:
-1. Extract information EXACTLY as it appears in the document
-2. Do not modify, round, or reformat any numbers or text
-3. Only include information from the current page
-4. If information is not found, write "Not found on this page"
-5. Do not make assumptions or inferences
-
-For example:
-- If you see "EUR 10,000", write exactly "EUR 10,000" (not "10000 EUR" or "10,000 EUR")
-- If you see "87.50%", write exactly "87.50%" (not "87.5%" or "88%")
-- If you see "03 May 2024", write exactly "03 May 2024" (not "3/5/24" or "2024-05-03")
-
-Extract and format the information as follows:
-
-PAGE 1 STRUCTURE:
-A. Product Details:
-   - Product Name: [copy exact name]
-   - ISIN: [copy exact code]
-   - Manufacturer: [copy exact name]
-   - Product Type: [copy exact description]
-   - Issue Date: [copy exact date]
-   - Maturity Date: [copy exact date]
-   - Currency: [copy exact code]
-   - Nominal Amount: [copy exact amount with format]
-
-B. Product Structure:
-   - Payment Conditions: [copy exact conditions with percentages]
-   - Protection Level: [copy exact percentage]
-   - Underlying Index: [copy exact name and code]
-
-C. Investor Profile:
-   - Investment Horizon: [copy exact period]
-   - Risk Tolerance: [copy exact percentage or description]
-   - Required Knowledge: [copy exact description]
-
-PAGE 2 STRUCTURE:
-A. Risk Assessment:
-   - Risk Level: [copy exact number/7]
-   - Risk Factors: [list each factor exactly as written]
-
-B. Performance Scenarios (€10,000 investment):
-   Stress Scenario:
-   - 1 year: [copy exact amount] ([copy exact percentage])
-   - Maturity: [copy exact amount] ([copy exact percentage])
-   
-   Unfavorable Scenario:
-   - 1 year: [copy exact amount] ([copy exact percentage])
-   - Maturity: [copy exact amount] ([copy exact percentage])
-   
-   Moderate Scenario:
-   - 1 year: [copy exact amount] ([copy exact percentage])
-   - Maturity: [copy exact amount] ([copy exact percentage])
-   
-   Favorable Scenario:
-   - 1 year: [copy exact amount] ([copy exact percentage])
-   - Maturity: [copy exact amount] ([copy exact percentage])
-
-PAGE 3 STRUCTURE:
-A. Cost Structure:
-   One-off Costs:
-   - Entry: [copy exact percentage]
-   - Exit: [copy exact percentage]
-   
-   Ongoing Costs:
-   - Transaction: [copy exact percentage]
-   - Other: [copy exact percentage]
-   
-   Incidental Costs:
-   - Performance Fees: [copy exact percentage]
-   - Carried Interest: [copy exact percentage]
-
-B. Total Cost Impact:
-   - After 1 year: [copy exact amount] ([copy exact percentage])
-   - At maturity: [copy exact amount] ([copy exact percentage])
-
-C. Holding Information:
-   - Recommended Period: [copy exact duration]
-   - Early Exit: [copy exact conditions]
-   - Secondary Market: [copy exact details]
-
-IMPORTANT: Your response should be a direct copy of the information as it appears in the document. Do not interpret, summarize, or modify any values."""
-
+        CRITICAL INSTRUCTIONS:
+        1. Extract information EXACTLY as it appears - preserve all formatting, spacing, and punctuation
+        2. Never modify numbers, dates, currencies, or percentages
+        3. Only include information visible on the current page
+        4. If information is not found, state "Not found on this page"
+        5. Do not make assumptions or inferences
+        6. Keep exact currency formats (e.g., "EUR", "GBP")
+        7. Maintain all numerical values exactly as shown
+        
+        PAGE 1 STRUCTURE:
+        Product Identification:
+        - Product Name: [exact name with all codes/references]
+        - ISIN: [exact code]
+        - Additional IDs: [Valor/Series number if present]
+        - Manufacturer: [exact name]
+        - Regulatory Status: [exact regulatory information]
+        - Production Date/Time: [exact timestamp if shown]
+        
+        Product Terms:
+        - Product Type: [exact description]
+        - Issue Date: [exact date]
+        - Maturity Date: [exact date]
+        - Currency: [exact code]
+        - Nominal Amount: [exact amount with currency]
+        
+        Underlying Assets:
+        - Names: [exact names/codes of all indices/assets]
+        - Initial Levels: [exact values if shown]
+        - Strike Levels: [exact percentages]
+        - Barrier Levels: [exact percentages]
+        - Autocall Levels: [exact percentages]
+        
+        Investment Mechanics:
+        - Objective: [exact description]
+        - Payoff Structure: [exact conditions]
+        - Early Termination: [exact autocall conditions]
+        - Protection Features: [exact description]
+        
+        PAGE 2 STRUCTURE:
+        Risk Assessment:
+        - Risk Indicator: [exact number/7]
+        - Risk Factors: [list each exactly as written]
+        - Market Impact: [exact description]
+        
+        Performance Scenarios:
+        Initial Investment: [exact amount]
+        
+        For each period ([list all shown periods]):
+        1. Stress Scenario:
+           - Amount: [exact with currency]
+           - Return: [exact with +/- percentage]
+        
+        2. Unfavorable Scenario:
+           - Amount: [exact with currency]
+           - Return: [exact with +/- percentage]
+        
+        3. Moderate Scenario:
+           - Amount: [exact with currency]
+           - Return: [exact with +/- percentage]
+        
+        4. Favorable Scenario:
+           - Amount: [exact with currency]
+           - Return: [exact with +/- percentage]
+        
+        PAGE 3 STRUCTURE:
+        Cost Structure:
+        One-off Costs:
+        - Entry: [exact percentage]
+        - Exit: [exact percentage]
+        
+        Ongoing Costs:
+        - Portfolio Transaction: [exact percentage]
+        - Management Fees: [exact percentage]
+        - Other: [exact percentage]
+        
+        Incidental Costs:
+        - Performance Fees: [exact percentage]
+        - Carried Interest: [exact percentage]
+        
+        Total Cost Impact:
+        For each period:
+        - Duration: [exact period]
+        - Amount: [exact with currency]
+        - Impact: [exact percentage]
+        
+        Additional Information:
+        - Recommended Holding: [exact duration]
+        - Early Exit Terms: [exact conditions]
+        - Secondary Market: [exact details]
+        - Complaint Process: [exact procedure]
+        
+        REMINDERS:
+        1. Keep exact currency formats (EUR, GBP)
+        2. Preserve all separators (e.g., "10,000.00")
+        3. Maintain exact percentage formats (e.g., "+87.50%", "-12.50%")
+        4. Copy dates exactly as written
+        5. Include all regulatory information
+        6. Preserve any reference codes exactly"""
+        
         return base_prompt
 
     def analyze_image(self, image: Image.Image, page_num: int, total_pages: int) -> str:

@@ -1,0 +1,16 @@
+{
+  "analyses": [
+    {
+      "page": 1,
+      "expected_text": "This is a Key Information Document for a 6Y GBP AC on WO UKX, SX5E, SPX (50% EKIP). Key details include:\n\nProduct Information:\n- Product Name: Meteor: 6Y GBP AC on WO UKX, SX5E, SPX (50% EKIP)\n- ISIN: XS1739449939\n- Manufacturer: Credit Suisse International\n- Product Type: English law governed notes\n- Issue Date: 10 April 2018\n- Maturity Date: 25 March 2024\n- Currency: GBP\n- Nominal Amount: GBP 1\n\nProduct Objectives:\n1. Provides returns through cash payments based on the performance of preference shares linked to underlying indices (FTSE 100, EURO STOXX 50, S&P 500).\n2. Early termination possible via autocall mechanism on predefined observation dates if the worst-performing underlying meets its autocall barrier level.\n3. Final payment depends on the barrier level performance of the worst-performing underlying.\n\nUnderlying Indices:\n- FTSE 100, EURO STOXX 50, S&P 500\n- Barrier Level: 50% of initial reference level"
+    },
+    {
+      "page": 2,
+      "expected_text": "Risk and Performance Analysis:\n\nRisk Indicator: 5/7 (medium-high risk)\nKey Risk Factors:\n- Currency risk due to payments in GBP\n- Loss of capital if worst-performing underlying is below barrier level\n- Poor market conditions unlikely to affect issuer's payment ability\n\nPerformance Scenarios (Investment GBP 10,000):\n1. Stress scenario:\n   - 1 year: GBP 8,301.10 (-16.99%)\n   - 3 years: GBP 4,631.60 (-17.85%)\n   - 6 years: GBP 2,650.14 (-12.33%)\n\n2. Unfavorable scenario:\n   - 1 year: GBP 10,625.00 (6.25%)\n   - 3 years: GBP 10,625.00 (2.08%)\n   - 6 years: GBP 10,675.00 (1.13%)\n\n3. Moderate scenario:\n   - 1 year: GBP 11,069.81 (10.70%)\n   - 3 years: GBP 11,300.00 (4.32%)\n   - 6 years: GBP 11,350.00 (2.26%)\n\n4. Favorable scenario:\n   - 1 year: GBP 11,053.43 (10.53%)\n   - 3 years: GBP 11,934.55 (6.43%)\n   - 6 years: GBP 13,375.00 (5.66%)"
+    },
+    {
+      "page": 3,
+      "expected_text": "Cost Structure Analysis:\n\nTotal Costs:\n- If cashed in after 1 year: GBP 853.64 (8.54% impact)\n- If cashed in after 3 years: GBP 780.17 (2.60% impact)\n- If held until maturity: GBP 716.76 (1.20% impact)\n\nDetailed Cost Breakdown:\n1. One-off costs:\n   - Entry costs: 1.20%\n   - Exit costs: 0.0%\n\n2. Ongoing costs:\n   - Other ongoing costs: 0.0%\n\nHolding Period Information:\n- Recommended: 6 years (until 25 March 2024)\n- No guarantee of early disinvestment without potential loss\n\nComplaint Process:\n- Direct submission to Credit Suisse at kid.enquiries@credit-suisse.com or via their website\n\nAdditional Information:\n- Listed on Luxembourg Stock Exchange\n- Payments dependent on reference level and trading conditions of underlying indices"
+    }
+  ]
+}
