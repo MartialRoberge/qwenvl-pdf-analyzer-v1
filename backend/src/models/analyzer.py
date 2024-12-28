@@ -104,20 +104,91 @@ class DocumentAnalyzer:
 
     def generate_analysis_prompt(self, page_num: int, total_pages: int) -> str:
         """Generate the analysis prompt."""
-        return f"""Analyze this financial document page {page_num} of {total_pages} and provide a detailed analysis. Focus on:
-    1.  Product name
-    2.  Product type
-    3.  ISIN identifier
-    4.  Issuer and guarantor
-    5.  Important dates (issue date, maturity date)
-    6.  Protection barrier and underlying indices
-    7.  Expected performance (scenarios: stress, unfavorable, moderate, favorable)
-    8.  Risk indicator (scale 1-7)
-    9.  Total and entry costs
-    10. Target audience (investment horizon, risk tolerance)
-    11. Product currency
+        base_prompt = f"""You are a specialized financial document analyzer for Key Information Documents (KID). Your task is to analyze page {page_num} of {total_pages} of this KID document.
 
-If an element is not found on a page, indicate 'not present'. Summarize your findings in a clear table for each page"""
+CRITICAL INSTRUCTIONS:
+1. Extract information EXACTLY as it appears in the document
+2. Do not modify, round, or reformat any numbers or text
+3. Only include information from the current page
+4. If information is not found, write "Not found on this page"
+5. Do not make assumptions or inferences
+
+For example:
+- If you see "EUR 10,000", write exactly "EUR 10,000" (not "10000 EUR" or "10,000 EUR")
+- If you see "87.50%", write exactly "87.50%" (not "87.5%" or "88%")
+- If you see "03 May 2024", write exactly "03 May 2024" (not "3/5/24" or "2024-05-03")
+
+Extract and format the information as follows:
+
+PAGE 1 STRUCTURE:
+A. Product Details:
+   - Product Name: [copy exact name]
+   - ISIN: [copy exact code]
+   - Manufacturer: [copy exact name]
+   - Product Type: [copy exact description]
+   - Issue Date: [copy exact date]
+   - Maturity Date: [copy exact date]
+   - Currency: [copy exact code]
+   - Nominal Amount: [copy exact amount with format]
+
+B. Product Structure:
+   - Payment Conditions: [copy exact conditions with percentages]
+   - Protection Level: [copy exact percentage]
+   - Underlying Index: [copy exact name and code]
+
+C. Investor Profile:
+   - Investment Horizon: [copy exact period]
+   - Risk Tolerance: [copy exact percentage or description]
+   - Required Knowledge: [copy exact description]
+
+PAGE 2 STRUCTURE:
+A. Risk Assessment:
+   - Risk Level: [copy exact number/7]
+   - Risk Factors: [list each factor exactly as written]
+
+B. Performance Scenarios (€10,000 investment):
+   Stress Scenario:
+   - 1 year: [copy exact amount] ([copy exact percentage])
+   - Maturity: [copy exact amount] ([copy exact percentage])
+   
+   Unfavorable Scenario:
+   - 1 year: [copy exact amount] ([copy exact percentage])
+   - Maturity: [copy exact amount] ([copy exact percentage])
+   
+   Moderate Scenario:
+   - 1 year: [copy exact amount] ([copy exact percentage])
+   - Maturity: [copy exact amount] ([copy exact percentage])
+   
+   Favorable Scenario:
+   - 1 year: [copy exact amount] ([copy exact percentage])
+   - Maturity: [copy exact amount] ([copy exact percentage])
+
+PAGE 3 STRUCTURE:
+A. Cost Structure:
+   One-off Costs:
+   - Entry: [copy exact percentage]
+   - Exit: [copy exact percentage]
+   
+   Ongoing Costs:
+   - Transaction: [copy exact percentage]
+   - Other: [copy exact percentage]
+   
+   Incidental Costs:
+   - Performance Fees: [copy exact percentage]
+   - Carried Interest: [copy exact percentage]
+
+B. Total Cost Impact:
+   - After 1 year: [copy exact amount] ([copy exact percentage])
+   - At maturity: [copy exact amount] ([copy exact percentage])
+
+C. Holding Information:
+   - Recommended Period: [copy exact duration]
+   - Early Exit: [copy exact conditions]
+   - Secondary Market: [copy exact details]
+
+IMPORTANT: Your response should be a direct copy of the information as it appears in the document. Do not interpret, summarize, or modify any values."""
+
+        return base_prompt
 
     def analyze_image(self, image: Image.Image, page_num: int, total_pages: int) -> str:
         """Analyze a single image."""
@@ -126,8 +197,16 @@ If an element is not found on a page, indicate 'not present'. Summarize your fin
             query = self.generate_analysis_prompt(page_num, total_pages)
             inputs = self.prepare_inputs(image, query)
 
+            default_params = {
+                'max_new_tokens': 1024,
+                'temperature': 0.7,
+                'do_sample': True,
+                'top_p': 0.9,
+                'num_beams': 1
+            }
+
             with torch.inference_mode():
-                output = self.model.generate(**inputs, **self.best_params)
+                output = self.model.generate(**inputs, **default_params)
                 raw_text = self.processor.batch_decode(output.cpu(), skip_special_tokens=True)[0]
                 cleaned_text = clean_model_output(raw_text)
 
