@@ -5,13 +5,13 @@ from transformers import AutoProcessor, Qwen2VLForConditionalGeneration, AutoTok
 from PIL import Image
 import logging
 from typing import List, Dict, Any
-from src.utils.model_utils import (
+from utils.model_utils import (
     load_optimal_params,
     prepare_image,
     clean_model_output,
     optimize_memory
 )
-from src.config.settings import (
+from config.settings import (
     MODEL_NAME,
     MIN_PIXELS,
     MAX_PIXELS,
@@ -66,6 +66,13 @@ class DocumentAnalyzer:
 
     def prepare_inputs(self, image: Image.Image, query: str) -> Dict[str, torch.Tensor]:
         """Prepare inputs for the model."""
+        # Convert image to RGB if necessary
+        if image.mode != 'RGB':
+            image = image.convert('RGB')
+            
+        # Ensure image is resized to target size
+        image = prepare_image(image, TARGET_IMAGE_SIZE)
+            
         messages = [{
             "role": "user",
             "content": [
@@ -87,6 +94,7 @@ class DocumentAnalyzer:
             images=image_inputs,
             padding=True,
             truncation=True,
+            max_length=2048,
             return_tensors="pt"
         )
 
@@ -210,7 +218,6 @@ class DocumentAnalyzer:
     def analyze_image(self, image: Image.Image, page_num: int, total_pages: int) -> str:
         """Analyze a single image."""
         try:
-            image = prepare_image(image, TARGET_IMAGE_SIZE)
             query = self.generate_analysis_prompt(page_num, total_pages)
             inputs = self.prepare_inputs(image, query)
 
