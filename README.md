@@ -24,17 +24,70 @@ Un analyseur de documents financiers utilisant le modèle Qwen2-VL pour extraire
 
 ## 💻 Installation
 
-1. Clonez le dépôt :
+### Prérequis
+
+- Python 3.10+
+- Homebrew (pour Mac)
+- Git
+
+### Instructions spéciales pour Mac M3 (Apple Silicon)
+
+L'installation sur Mac M3 nécessite quelques étapes spécifiques pour assurer la compatibilité avec l'architecture ARM. Suivez ces étapes dans l'ordre :
+
+1. **Installer Homebrew** (si ce n'est pas déjà fait) :
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
+
+2. **Installer Poppler** (nécessaire pour le traitement des PDF) :
+```bash
+brew install poppler
+```
+
+3. **Cloner le repository** :
 ```bash
 git clone https://github.com/MartialRoberge/qwenvl-pdf-analyzer-v1.git
 cd qwenvl-pdf-analyzer-v1
 ```
 
-2. Installez les dépendances Python :
+4. **Créer et activer l'environnement virtuel** :
 ```bash
-cd backend
+python3 -m venv venv
+source venv/bin/activate
+```
+
+5. **Installer les dépendances** :
+```bash
 pip install -r requirements.txt
 ```
+
+6. **Installer les données NLTK nécessaires** :
+```bash
+python -c "import nltk; nltk.download('punkt'); nltk.download('averaged_perceptron_tagger'); nltk.download('universal_tagset')"
+```
+
+### Notes importantes pour Mac M3
+
+- Le fichier `requirements.txt` est configuré spécifiquement pour Mac M3 avec :
+  - PyTorch optimisé pour Apple Silicon
+  - llama-cpp-python compatible avec ARM
+  - Toutes les dépendances testées pour Mac M3
+
+- Si vous rencontrez des erreurs liées à PyTorch, assurez-vous d'utiliser la dernière version du fichier requirements.txt qui inclut les sources spécifiques pour Mac M3.
+
+### Lancement de l'application
+
+1. **Activer l'environnement virtuel** (si ce n'est pas déjà fait) :
+```bash
+source venv/bin/activate
+```
+
+2. **Lancer l'application** :
+```bash
+python3 src/app.py
+```
+
+L'application sera accessible à l'adresse : http://localhost:5004
 
 ## 📁 Structure du projet
 
