@@ -84,10 +84,10 @@ source venv/bin/activate
 
 2. **Lancer l'application** :
 ```bash
-python3 src/app.py
+python backend/VLM/app.py
 ```
 
-L'application sera accessible à l'adresse : http://localhost:5004
+L'application sera accessible à l'adresse : http://localhost:5000
 
 ## 📁 Structure du projet
 
