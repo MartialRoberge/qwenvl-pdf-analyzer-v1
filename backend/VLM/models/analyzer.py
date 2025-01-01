@@ -66,13 +66,6 @@ class DocumentAnalyzer:
 
     def prepare_inputs(self, image: Image.Image, query: str) -> Dict[str, torch.Tensor]:
         """Prepare inputs for the model."""
-        # Convert image to RGB if necessary
-        if image.mode != 'RGB':
-            image = image.convert('RGB')
-            
-        # Ensure image is resized to target size
-        image = prepare_image(image, TARGET_IMAGE_SIZE)
-            
         messages = [{
             "role": "user",
             "content": [
@@ -94,7 +87,6 @@ class DocumentAnalyzer:
             images=image_inputs,
             padding=True,
             truncation=True,
-            max_length=2048,
             return_tensors="pt"
         )
 
@@ -112,125 +104,30 @@ class DocumentAnalyzer:
 
     def generate_analysis_prompt(self, page_num: int, total_pages: int) -> str:
         """Generate the analysis prompt."""
-        base_prompt = f"""You are a specialized financial document analyzer for Key Information Documents (KID). Your task is to analyze page {page_num} of {total_pages} of this KID document.
+        return f"""Analyze this financial document page {page_num} of {total_pages} and provide a detailed analysis. Focus on:
+    1.  Product name
+    2.  Product type
+    3.  ISIN identifier
+    4.  Issuer and guarantor
+    5.  Important dates (issue date, maturity date)
+    6.  Protection barrier and underlying indices
+    7.  Expected performance (scenarios: stress, unfavorable, moderate, favorable)
+    8.  Risk indicator (scale 1-7)
+    9.  Total and entry costs
+    10. Target audience (investment horizon, risk tolerance)
+    11. Product currency
 
-        CRITICAL INSTRUCTIONS:
-        1. Extract information EXACTLY as it appears - preserve all formatting, spacing, and punctuation
-        2. Never modify numbers, dates, currencies, or percentages
-        3. Only include information visible on the current page
-        4. If information is not found, state "Not found on this page"
-        5. Do not make assumptions or inferences
-        6. Keep exact currency formats (e.g., "EUR", "GBP")
-        7. Maintain all numerical values exactly as shown
-        
-        PAGE 1 STRUCTURE:
-        Product Identification:
-        - Product Name: [exact name with all codes/references]
-        - ISIN: [exact code]
-        - Additional IDs: [Valor/Series number if present]
-        - Manufacturer: [exact name]
-        - Regulatory Status: [exact regulatory information]
-        - Production Date/Time: [exact timestamp if shown]
-        
-        Product Terms:
-        - Product Type: [exact description]
-        - Issue Date: [exact date]
-        - Maturity Date: [exact date]
-        - Currency: [exact code]
-        - Nominal Amount: [exact amount with currency]
-        
-        Underlying Assets:
-        - Names: [exact names/codes of all indices/assets]
-        - Initial Levels: [exact values if shown]
-        - Strike Levels: [exact percentages]
-        - Barrier Levels: [exact percentages]
-        - Autocall Levels: [exact percentages]
-        
-        Investment Mechanics:
-        - Objective: [exact description]
-        - Payoff Structure: [exact conditions]
-        - Early Termination: [exact autocall conditions]
-        - Protection Features: [exact description]
-        
-        PAGE 2 STRUCTURE:
-        Risk Assessment:
-        - Risk Indicator: [exact number/7]
-        - Risk Factors: [list each exactly as written]
-        - Market Impact: [exact description]
-        
-        Performance Scenarios:
-        Initial Investment: [exact amount]
-        
-        For each period ([list all shown periods]):
-        1. Stress Scenario:
-           - Amount: [exact with currency]
-           - Return: [exact with +/- percentage]
-        
-        2. Unfavorable Scenario:
-           - Amount: [exact with currency]
-           - Return: [exact with +/- percentage]
-        
-        3. Moderate Scenario:
-           - Amount: [exact with currency]
-           - Return: [exact with +/- percentage]
-        
-        4. Favorable Scenario:
-           - Amount: [exact with currency]
-           - Return: [exact with +/- percentage]
-        
-        PAGE 3 STRUCTURE:
-        Cost Structure:
-        One-off Costs:
-        - Entry: [exact percentage]
-        - Exit: [exact percentage]
-        
-        Ongoing Costs:
-        - Portfolio Transaction: [exact percentage]
-        - Management Fees: [exact percentage]
-        - Other: [exact percentage]
-        
-        Incidental Costs:
-        - Performance Fees: [exact percentage]
-        - Carried Interest: [exact percentage]
-        
-        Total Cost Impact:
-        For each period:
-        - Duration: [exact period]
-        - Amount: [exact with currency]
-        - Impact: [exact percentage]
-        
-        Additional Information:
-        - Recommended Holding: [exact duration]
-        - Early Exit Terms: [exact conditions]
-        - Secondary Market: [exact details]
-        - Complaint Process: [exact procedure]
-        
-        REMINDERS:
-        1. Keep exact currency formats (EUR, GBP)
-        2. Preserve all separators (e.g., "10,000.00")
-        3. Maintain exact percentage formats (e.g., "+87.50%", "-12.50%")
-        4. Copy dates exactly as written
-        5. Include all regulatory information
-        6. Preserve any reference codes exactly"""
-        
-        return base_prompt
+If an element is not found on a page, indicate 'not present'. Summarize your findings in a clear table for each page"""
 
     def analyze_image(self, image: Image.Image, page_num: int, total_pages: int) -> str:
         """Analyze a single image."""
         try:
+            image = prepare_image(image, TARGET_IMAGE_SIZE)
             query = self.generate_analysis_prompt(page_num, total_pages)
             inputs = self.prepare_inputs(image, query)
 
-            default_params = {
-                'max_new_tokens': 1024,
-                'temperature': 0.7,
-                'do_sample': True,
-                'top_p': 0.9,
-                'num_beams': 1
-            }
-
             with torch.inference_mode():
-                output = self.model.generate(**inputs, **default_params)
+                output = self.model.generate(**inputs, **self.best_params)
                 raw_text = self.processor.batch_decode(output.cpu(), skip_special_tokens=True)[0]
                 cleaned_text = clean_model_output(raw_text)
 

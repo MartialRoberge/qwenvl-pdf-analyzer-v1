@@ -7,6 +7,7 @@ from PIL import Image
 import json
 from pathlib import Path
 import re
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +42,11 @@ def load_optimal_params(hyperparams_file: str) -> Dict[str, Any]:
 def prepare_image(image: Image.Image, target_size: Tuple[int, int]) -> Image.Image:
     """Prepare image for model input."""
     if isinstance(image, Image.Image):
-        return image.resize(target_size)
+        # Convert to RGB if needed
+        if image.mode != 'RGB':
+            image = image.convert('RGB')
+        # Resize
+        return image.resize(target_size, Image.Resampling.LANCZOS)
     return image
 
 def clean_model_output(text: str) -> str:
