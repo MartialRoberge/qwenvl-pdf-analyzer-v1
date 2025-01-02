@@ -1,0 +1,42 @@
+{
+    "model": {
+        "name": "mistral-7b-instruct-v0.2.Q8_0.gguf",
+        "path": "/Users/martialroberge/Desktop/Ing4/Python/qwenvl-pdf-analyzer/backend/LLM/mistral-7b-instruct-v0.2.Q8_0.gguf",
+        "device": "mps",
+        "max_length": 4096,
+        "temperature": 0.1,
+        "max_retries": 3,
+        "max_tokens": 512
+    },
+    "paths": {
+        "test_cases": "test_cases",
+        "outputs": "outputs",
+        "schemas": "schemas",
+        "logs": "logs/app.log"
+    },
+    "validation": {
+        "min_acceptable_score": 0.8,
+        "weights": {
+            "structure": 0.4,
+            "format": 0.3,
+            "logic": 0.3
+        },
+        "formats": {
+            "isin_pattern": "^[A-Z]{2}[A-Z0-9]{9}\\d$",
+            "date_pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "risk_levels": ["Low", "Medium", "High"]
+        },
+        "required_fields": {
+            "document": ["type", "category", "purpose", "regulatory_classification"],
+            "product": ["isin", "name", "protection_level", "currency"],
+            "dates": ["issue", "redemption_valuation", "redemption"],
+            "risk": ["level", "factors", "warnings"],
+            "entity": ["issuer", "guarantor", "authority", "kid_date"],
+            "performance": ["scenarios"]
+        }
+    },
+    "logging": {
+        "level": "INFO",
+        "format": "%(asctime)s - %(levelname)s - %(message)s"
+    }
+}

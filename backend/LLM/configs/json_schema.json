@@ -1,0 +1,57 @@
+{
+    "document": {
+        "type": "str",
+        "category": "str",
+        "purpose": "str",
+        "regulatory_classification": "str"
+    },
+    "product": {
+        "isin": "str",
+        "name": "str",
+        "protection_level": {
+            "initial": "float",
+            "final": "float or null"
+        },
+        "currency": "str"
+    },
+    "dates": {
+        "issue": "YYYY-MM-DD",
+        "redemption_valuation": "YYYY-MM-DD",
+        "redemption": "YYYY-MM-DD"
+    },
+    "risk": {
+        "level": "str",
+        "factors": ["str"],
+        "warnings": ["str"]
+    },
+    "entity": {
+        "issuer": "str",
+        "guarantor": "str",
+        "authority": "str",
+        "kid_date": "YYYY-MM-DD"
+    },
+    "performance": {
+        "scenarios": {
+            "stress": {
+                "initial": "float",
+                "final": "float"
+            },
+            "unfavorable": {
+                "initial": "float",
+                "final": "float"
+            },
+            "moderate": {
+                "initial": "float",
+                "final": "float"
+            },
+            "favorable": {
+                "initial": "float",
+                "final": "float"
+            }
+        },
+        "costs": {
+            "total": "float",
+            "impact_on_return": "float"
+        }
+    }
+}

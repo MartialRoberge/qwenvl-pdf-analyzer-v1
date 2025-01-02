@@ -1,0 +1,59 @@
+{
+    "document": {
+        "type": "Key Information Document",
+        "category": "Financial Product",
+        "purpose": "Investor Information",
+        "regulatory_classification": "Not applicable"
+    },
+    "product": {
+        "isin": "XS1914695009",
+        "name": "5Y Jump Certificate SOLEDVSP with 87.50% Protection",
+        "protection_level": {
+            "initial": 0.875,
+            "final": null
+        },
+        "currency": "EUR"
+    },
+    "dates": {
+        "issue": "03 May 2019",
+        "redemption_valuation": "Not applicable",
+        "redemption": "Not applicable"
+    },
+    "risk": {
+        "level": "High",
+        "factors": [
+            "Market Impact: The risk indicator assumes you keep the product until maturity. The actual risk can vary significantly if you cash in at an early stage and you may get back less. You may not be able to sell your product easily or you may have to sell at a price that significantly impacts on how much you get back."
+        ],
+        "warnings": []
+    },
+    "entity": {
+        "issuer": "BNP Paribas S.A.",
+        "guarantor": "Not applicable",
+        "authority": "Not applicable",
+        "kid_date": "03 December 2022"
+    },
+    "performance": {
+        "scenarios": {
+            "stress": {
+                "initial": 10000,
+                "final": 9113.11
+            },
+            "unfavorable": {
+                "initial": 10000,
+                "final": 9686.59
+            },
+            "moderate": {
+                "initial": 10000,
+                "final": 10209.38
+            },
+            "favorable": {
+                "initial": 10000,
+                "final": 12872.49
+            }
+        },
+        "costs": {
+            "total": null,
+            "impact_on_return": 0.875
+        }
+    }
+}

@@ -1,0 +1,63 @@
+{
+    "document": {
+        "type": "Financial Document",
+        "category": "Investment Product Key Information Document (KID)",
+        "purpose": "Provides key information about the investment product",
+        "regulatory_classification": "Required by law"
+    },
+    "product": {
+        "isin": "XS1914695009",
+        "name": "5Y Jump Certificate SOLEDVSP with 87.50% Protection",
+        "protection_level": {
+            "initial": 0.875,
+            "final": null
+        },
+        "currency": "EUR"
+    },
+    "dates": {
+        "issue": "2019-05-03",
+        "redemption_valuation": "2024-04-26",
+        "redemption": "2024-05-03"
+    },
+    "risk": {
+        "level": "Medium",
+        "factors": [
+            "Short term investment horizon (less than three years)",
+            "Limited losses at maturity (up to 12.5% of Notional Amount)",
+            "Informed or sufficient knowledge of the financial markets"
+        ],
+        "warnings": [
+            "Potential total loss if Issuer or Guarantor defaults"
+        ]
+    },
+    "entity": {
+        "issuer": "BNP Paribas Issuance B.V.",
+        "guarantor": "BNP Paribas S.A.",
+        "authority": "Autorité des marchés financiers (AMF)",
+        "kid_date": "2022-12-03"
+    },
+    "performance": {
+        "scenarios": {
+            "stress": {
+                "initial": 9113.11,
+                "final": 9311.93
+            },
+            "unfavorable": {
+                "initial": 9686.59,
+                "final": 9311.93
+            },
+            "moderate": {
+                "initial": 10209.38,
+                "final": 9311.93
+            },
+            "favorable": {
+                "initial": 12872.49,
+                "final": 14899.09
+            }
+        },
+        "costs": {
+            "total": 108.11,
+            "impact_on_return": 1.08
+        }
+    }
+}
