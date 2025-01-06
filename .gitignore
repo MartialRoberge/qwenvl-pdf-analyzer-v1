@@ -58,3 +58,6 @@ frontend/.cache/
 *.env.production.local
 __pycache__/
 *.py[cod]
+*.gguf
+.DS_Store
+
